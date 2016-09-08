@@ -823,6 +823,10 @@ function GotCategoriesList(returnObj, id, setRn) {
 	root.path = '';
 	root.subs = new Array();
 	for (var index = 0; index < catsArray.length; index++) {
+
+	    //Helix Added
+
+
 		var subCats = catsArray[index].split(nrvConfig.CategoryCharacter);
 		var indent = '';
 		var currentParent = root;
@@ -1257,6 +1261,18 @@ function GotRenderedReportSet(returnObj, id) {
 		if (typeof(GetFiltersData) === 'function')
 			GetFiltersData();
 	}
+
+    //Helix - Code added to expand AG reports.
+    //Create an object with no properties so that there is no chance of conflicts.
+    //Using an object instead of a Set because of potential browser compatibility issues.
+	var expandedReports = Object.create(null);
+    expandedReports["Helix PL"] = true;
+    //For now, all reports are expanded. In the future that will not be true. Enumerating the reports by name is one way of dealing with it.
+    //Another would be to have some naming convention.
+
+	//if (location.search.substring(4, location.search.length) in expandedReports)
+	    jq$(".ag-icon-show-all").click();
+	
 }
 
 function FirstLoadInit() {

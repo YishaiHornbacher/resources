@@ -365,7 +365,9 @@ function AcceptReports(returnObj, id, parameters) {
 			if (report.Category != null && report.Category != '')
 				fullName = report.Category + nrlConfigObj.CategoryCharacter + fullName;
 			directLink = linkTemplate + report.UrlEncodedName;
-			printLink = "\'rs.aspx?rn=" + report.UrlEncodedName + "&print=1\'";
+		    //printLink = "\'rs.aspx?rn=" + report.UrlEncodedName + "&print=1\'";
+            //Helix change above line to this to make print a PDF experience.
+		    printLink = "\'rs.aspx?rn=" + report.UrlEncodedName + "&output=PDF\'";
 			designLink = designTemplate[0] + report.UrlEncodedName + designTemplate[1];
 			deleteLink = 'javascript:RL_DeleteNew(\'' + IzLocal.Res('js_AreYouSureYouWantToDeleteMessage', 'Are you sure you want to delete {0}?')
 				// RegEx /([#;?%&,.+*~\\':"!^$[\]()=><|\/@])/g escapes characters from the set in square brackets by two slashes
