@@ -835,6 +835,9 @@ function GotCategoriesList(returnObj, id, setRn) {
 	for (var index = 0; index < catsArray.length; index++) {
 
 	    //Helix Added
+            if (catsArray[index].substr(-"[Helix]".length) === "[Helix]") {
+               continue;
+            }
 
 
 		var subCats = catsArray[index].split(nrvConfig.CategoryCharacter);
