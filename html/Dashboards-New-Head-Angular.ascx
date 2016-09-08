@@ -1,8 +1,10 @@
 ﻿<%@ Control Language="C#" AutoEventWireup="true" %>
 <%@ Import Namespace="Izenda.AdHoc" %>
 <title>Dashboards</title>
+<script type="text/javascript" src="Resources/js/main.js"></script>
 <script type="text/javascript">
-  window.izendaPageId$ = (new Date()).getTime().toString();
+	ensureIzPidProcessed();
+	window.angularPageId$ = (new Date()).getTime().toString();
 </script>
 <link rel="stylesheet" type="text/css" href="rs.aspx?css=ModernStyles.jquery-ui"/>
 <link rel="stylesheet" type="text/css" href="Resources/css/ModernStyles/jquery.minicolors.css" />
@@ -79,7 +81,10 @@
 <script>
   // legacy code: needed for correct report old scripts work
   var urlSettings = window.urlSettings$;
-  jq$.ajax(urlSettings.urlRsPage + '?wscmd=reportviewerconfig&wsarg0=0&wsarg1=0&wsarg2=' + urlSettings.reportInfo.fullName + ((typeof (window.izendaPageId$) !== 'undefined') ? '&izpid=' + window.izendaPageId$ : ''), {
+  var url = urlSettings.urlRsPage + '?wscmd=reportviewerconfig&wsarg0=0&wsarg1=0&wsarg2=' + encodeURIComponent(urlSettings.reportInfo.fullName);
+  url = appendParameterToUrl(url, 'izpid', window.izendaPageId$);
+  url = appendParameterToUrl(url, 'anpid', window.angularPageId$);
+  jq$.ajax(url, {
     dataType: 'json'
   }).done(function (returnObj) {
     nrvConfig = returnObj;
@@ -298,10 +303,12 @@
 <script type="text/javascript" src="Resources/components/dashboard/module-definition.js"></script>
 <script type="text/javascript" src="Resources/components/dashboard/services/background-service.js"></script>
 <script type="text/javascript" src="Resources/components/dashboard/services/dashboard-query-service.js"></script>
+<script type="text/javascript" src="Resources/components/dashboard/services/gallery-service.js"></script>
 <script type="text/javascript" src="Resources/components/dashboard/services/toolbar-query-service.js"></script>
 <script type="text/javascript" src="Resources/components/dashboard/services/dashboard-state-service.js"></script>
 <script type="text/javascript" src="Resources/components/dashboard/directives/toolbar-links-panel.js"></script>
 <script type="text/javascript" src="Resources/components/dashboard/directives/dashboard-background.js"></script>
+<script type="text/javascript" src="Resources/components/dashboard/directives/gallery.js"></script>
 <script type="text/javascript" src="Resources/components/dashboard/directives/tile-top-slider.js"></script>
 <script type="text/javascript" src="Resources/components/dashboard/directives/toolbar-folder-menu-accordion.js"></script>
 <script type="text/javascript" src="Resources/components/dashboard/controllers/tile-controller.js"></script>
@@ -317,23 +324,29 @@
     if (Page.Request.Params["clear"] != null)
     {
       AdHocContext.CurrentReportSet = ReportSet.InitializeNew();
-      Response.Redirect(Page.Request.Url.LocalPath + "#?new");
+      Response.Redirect(Utility.AppendIzPidParameter(Page.Request.Url.LocalPath) + "#?new");
     }
 
     if (Page.Request.Params["rn"] != null)
     {
       string report = Page.Request.Params["rn"],
         query = null;
+      var izpidFound = false;
       foreach (string key in Request.QueryString.AllKeys)
       {
-        if (key == "rn")
-          continue;
-        if (!string.IsNullOrEmpty(query))
-          query += "&";
-        query += string.Format("{0}={1}", key, Request.QueryString[key]);
+          if (key == "rn")
+              continue;
+          if (key == "izpid")
+              izpidFound = true;
+          if (!string.IsNullOrEmpty(query))
+              query += "&";
+          query += string.Format("{0}={1}", key, Request.QueryString[key]);
       }
+      var baseUrl = Request.Path + (!string.IsNullOrEmpty(query) ? "?" : "") + query;
+      if (!izpidFound)
+          baseUrl = Utility.AppendIzPidParameter(baseUrl);
 
-      Response.Redirect(Request.Path + (!string.IsNullOrEmpty(query) ? "?" : "") + query + "#/" + report.Replace('\\', '/'));
+      Response.Redirect(baseUrl + "#/" + report.Replace("\\", "%5c"));
     }
   }
 </script>

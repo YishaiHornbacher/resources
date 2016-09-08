@@ -1601,8 +1601,10 @@ function ($injector, $window, $q, $log, $sce, $rootScope, $izendaUtil, $izendaUr
 		return $q(function (resolve) {
 					var addParam = '';
 					if (typeof (window.izendaPageId$) !== 'undefined')
-						addParam = '&izpid=' + window.izendaPageId$;
-					$window.open($izendaUrl.settings.urlRsPage + '?output=' + type + addParam, '_self');
+						addParam += '&izpid=' + window.izendaPageId$;
+					if (typeof (window.angularPageId$) !== 'undefined')
+						addParam += '&anpid=' + window.angularPageId$;
+					$window.open(getAppendedUrl($izendaUrl.settings.urlRsPage + '?output=' + type + addParam), '_self');
 					resolve(true);
 			});
 	};
@@ -1614,7 +1616,9 @@ function ($injector, $window, $q, $log, $sce, $rootScope, $izendaUtil, $izendaUr
 		return $q(function (resolve) {
 					var addParam = '';
 					if (typeof (window.izendaPageId$) !== 'undefined')
-						addParam = '&izpid=' + window.izendaPageId$;
+						addParam += '&izpid=' + window.izendaPageId$;
+					if (typeof (window.angularPageId$) !== 'undefined')
+						addParam += '&anpid=' + window.angularPageId$;
 					ExtendReportExport(responseServer.OpenUrl, 'rs.aspx?p=htmlreport&print=1' + addParam, 'aspnetForm', '');
 					resolve(true);
 			});
@@ -1649,7 +1653,7 @@ function ($injector, $window, $q, $log, $sce, $rootScope, $izendaUtil, $izendaUr
 				url += '?rn=' + getReportSetFullName() + '&tab=Fields';
 			else
 				url += '?tab=Fields';
-			$window.location.href = url;
+			$window.location.href = getAppendedUrl(url);
 		});
 	};
 
@@ -1692,7 +1696,7 @@ function ($injector, $window, $q, $log, $sce, $rootScope, $izendaUtil, $izendaUr
 			throw 'Can\'t send email without report name';
 		var redirectUrl = '?subject=' + encodeURIComponent(reportInfo.fullName) + '&body=' + encodeURIComponent(location);
 		redirectUrl = 'mailto:' + redirectUrl.replace(/ /g, '%20');
-		window.top.location = redirectUrl;
+		window.top.location = getAppendedUrl(redirectUrl);
 	};
 
 	/**
@@ -1843,6 +1847,8 @@ function ($injector, $window, $q, $log, $sce, $rootScope, $izendaUtil, $izendaUr
 							valueDates.push(parsedDate._d);
 					});
 					filter.values = valueDates;
+				} else if (filter.operator && filter.operator.value === 'Equals_TextArea') {
+					filter.currentValue = filter.values.join();
 				}
 
 				resolve(filter);
@@ -1867,7 +1873,7 @@ function ($injector, $window, $q, $log, $sce, $rootScope, $izendaUtil, $izendaUr
 			angular.element.each(options, function () {
 				var option = this;
 				if (option.value === '...') {
-					if (operatorType === 'select' || operatorType === 'inTimePeriod') {
+					if (operatorType === 'select' || operatorType === 'inTimePeriod' || operatorType === 'select_multiple') {
 						option.text = parseHtmlUnicodeEntities(option.text);
 						option.value = option.value;
 						result.push(option);
@@ -1892,10 +1898,22 @@ function ($injector, $window, $q, $log, $sce, $rootScope, $izendaUtil, $izendaUr
 			return resultsArray[0];
 		}
 
+		function syncValues(filter) {
+			if (filter.values.length === 0 || filter.operator.value === 'Equals_Autocomplete')
+				return;
+			var newValues = [];
+			angular.element.each(filter.existentValues, function () {
+				var existentValue = this.value;
+				if (filter.values.indexOf(existentValue) >= 0)
+					newValues.push(existentValue);
+			});
+			filter.values = newValues;
+		}
+
 		// return promise
 		return $q(function (resolve) {
 			if (!angular.isObject(filter)) {
-				resolve(null);
+				resolve(filter);
 				return;
 			}
 
@@ -1925,6 +1943,7 @@ function ($injector, $window, $q, $log, $sce, $rootScope, $izendaUtil, $izendaUr
 				$izendaInstantReportQuery.getExistentValuesList(getActiveTables(), constraintFilters, filter, true, reportSet.filterOptions.filterLogic)
 					.then(function (data) {
 						filter.existentValues = convertOptionsForSelect(data[0].options, operatorType);
+						syncValues(filter);
 						var defaultValue = getOptionByValue(filter.existentValues, '...');
 						if (filter.values.length === 0 && defaultValue)
 							filter.values = [defaultValue.value];
@@ -1934,6 +1953,7 @@ function ($injector, $window, $q, $log, $sce, $rootScope, $izendaUtil, $izendaUr
 			} else if (operatorType === 'inTimePeriod') {
 				$izendaInstantReportQuery.getPeriodList().then(function(data) {
 					filter.existentValues = convertOptionsForSelect(data[0].options, operatorType);
+					syncValues(filter);
 					var defaultValue = getOptionByValue(filter.existentValues, '...');
 					if (filter.values.length === 0 && defaultValue)
 						filter.values = [defaultValue.value];
@@ -1999,11 +2019,11 @@ function ($injector, $window, $q, $log, $sce, $rootScope, $izendaUtil, $izendaUr
 					refreshNextFiltersCascading(refreshingFilter).then(function () {
 						// we don't need to call markAllFiltersAsRefreshing(false); here, because the last time when that function
 						// will be called - it will go through the "else" condition.
-						resolve();
+						resolve(filter);
 					});
 				});
 			} else {
-				resolve();
+				resolve(filter);
 			}
 		});
 	}
@@ -2492,8 +2512,14 @@ function ($injector, $window, $q, $log, $sce, $rootScope, $izendaUtil, $izendaUr
 					titleFormat: filter.titleFormat,
 					customPopupTemplateUrl: filter.customPopupTemplateUrl
 				};
-				var newFilter = _createNewFilterBase(filterConfig.fieldSysName, filterConfig.operatorName, filterConfig.values,
-					filterConfig.required, filterConfig.description, filterConfig.parameter, filter.customPopupTemplateUrl);
+				var newFilter = _createNewFilterBase(
+					filterConfig.fieldSysName,
+					filterConfig.operatorName,
+					filterConfig.values,
+					filterConfig.required,
+					filterConfig.description,
+					filterConfig.parameter,
+					filter.customPopupTemplateUrl);
 				
 				reportSet.filters[i] = newFilter;
 
