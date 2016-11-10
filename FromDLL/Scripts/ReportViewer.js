@@ -752,7 +752,8 @@ function GotCategoriesList(returnObj, id, setRn) {
 	for (var index = 0; index < catsArray.length; index++) {
 
 	    //Helix Added
-            if (catsArray[index].substr(-"[Helix]".length) === "[Helix]") {
+	    var reportName = catsArray[index];
+            if (reportName.substr(-"[Helix]".length) === "[Helix]" || (reportName.charAt(0) === "z" && (reportName.substring(0,2) === "zz" || reportName.substring(1,1) === reportName.substring(1,1).toUpperCase()))) {
                continue;
             }
 
