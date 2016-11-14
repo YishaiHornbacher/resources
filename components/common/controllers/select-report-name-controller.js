@@ -198,6 +198,13 @@ function IzendaSelectReportNameController(
 				if (category == null || category === '')
 					category = vm.UNCATEGORIZED_TEXT;
 				var item = !report.Subcategory ? category : category + $izendaSettings.getCategoryCharacter() + report.Subcategory;
+
+			    //helixAdded
+				var helixCategory = item;
+				if (helixCategory.substr(-"[Helix]".length) === "[Helix]" || (helixCategory.charAt(0) === "z" && (helixCategory.substring(0, 2) === "zz" || helixCategory.substring(1, 1) === helixCategory.substring(1, 1).toUpperCase()))) {
+				    continue;
+				}
+
 				if (angular.element.grep(vm.categories, function (a) {
 					return a['name'] === item;
 				}).length === 0) {

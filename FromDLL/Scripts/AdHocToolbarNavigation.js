@@ -162,6 +162,13 @@ function TB_PropmtReportName(
 				var newCurrentCategory = new Array();
 				var subcategories = categories[i].split(jsResources.categoryCharacter);
 				
+			    //Helix Added
+			    var helixCategory = categories[i];
+			    if (helixCategory.substr(-"[Helix]".length) === "[Helix]" || (helixCategory.charAt(0) === "z" && (helixCategory.substring(0, 2) === "zz" || helixCategory.substring(1, 1) === helixCategory.substring(1, 1).toUpperCase()))) {
+				    continue;
+				}
+
+
 				var cnt = currentCategory.length;
 				if (cnt > subcategories.length)
 				  cnt = subcategories.length;
