@@ -1,9 +1,13 @@
-﻿angular.module('izendaInstantReport').factory('$izendaInstantReportValidation', [
-	'$q',
-	'$izendaLocale',
-	'$izendaInstantReportStorage',
-	'$izendaInstantReportPivots',
-	function ($q, $izendaLocale, $izendaInstantReportStorage, $izendaInstantReportPivots) {
+﻿define(['../../common/services/services', './instant-report-storage', './instant-report-pivot'], function () {
+
+	angular.module('izendaInstantReport').factory('$izendaInstantReportValidation', [
+		'$q',
+		'$izendaLocale',
+		'$izendaInstantReportStorage',
+		'$izendaInstantReportPivots',
+	'$izendaInstantReportSettings',
+	'$izendaCompatibility',
+	function ($q, $izendaLocale, $izendaInstantReportStorage, $izendaInstantReportPivots, $izendaInstantReportSettings, $izendaCompatibility) {
 		'use strict';
 
 		var validation = {
@@ -54,7 +58,7 @@
 					});
 				} else {
 					var havePivotCells = false;
-					angular.element.each(pivotCells, function() {
+					angular.element.each(pivotCells, function () {
 						var pivotCell = this;
 						if (angular.isObject(pivotCell))
 							havePivotCells = true;
@@ -77,6 +81,16 @@
 			validation.isValid = true;
 			validation.messages = [];
 		};
+
+		var getValidationActions = function () {
+			var result = [];
+			angular.element.each(validation.messages, function () {
+				var message = this;
+				if (message.additionalActionType)
+					result.push(message.additionalActionType)
+			});
+			return result;
+		}
 
 		/**
 		 * Validate report set
@@ -111,7 +125,7 @@
 			}
 
 			// distinct validation
-			if (options.distinct && binaryFields.length > 0) {
+			if ($izendaInstantReportSettings.showDistinct && options.distinct && binaryFields.length > 0) {
 				var binaryFieldsString = binaryFields.map(function (bField) {
 					return '"' + bField.name + '" (' + bField.sqlType + ')';
 				}).join(', ');
@@ -131,11 +145,37 @@
 			return validation.isValid;
 		};
 
+		/**
+		 * Validate report set and refresh preview.
+		 */
+		var validateReportSetAndRefresh = function () {
+			var _updatePreview = function () {
+				if (!$izendaCompatibility.isSmallResolution())
+					$izendaInstantReportStorage.getReportPreviewHtml();
+			};
+
+			var validationResult = validateReportSet();
+			var validationActions = getValidationActions();
+			if (validationResult) {
+				// report is valid
+				if (validationActions.indexOf('TURN_OFF_DISTINCT') >= 0) {
+					$izendaInstantReportStorage.getOptions().distinct = false;
+				}
+				_updatePreview();
+			} else {
+				// report not valid
+				$izendaInstantReportStorage.clearReportPreviewHtml();
+			}
+		};
+
 		// public API
 		return {
 			isReportValid: isReportValid,
 			getValidation: getValidation,
 			getValidationMessages: getValidationMessages,
-			validateReportSet: validateReportSet
+			validateReportSet: validateReportSet,
+			validateReportSetAndRefresh: validateReportSetAndRefresh
 		};
 	}]);
+
+});
