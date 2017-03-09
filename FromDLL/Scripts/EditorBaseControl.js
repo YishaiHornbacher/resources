@@ -790,6 +790,10 @@ function EBC_ExpandGroupTable(row) {
 
 
 function EBC_ExpandTable(row) {
+    //Helix Added
+    if (jq$(row).find('td:first-child:has(a)').length > 0) {
+        return;
+    }
 	var rowIndex = row.rowIndex;
 	var table = row.parentNode;
 
