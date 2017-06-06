@@ -396,7 +396,9 @@ var resourcesProvider;
 								(event.stopPropagation) ? event.stopPropagation() : event.returnValue = false;
 								(event.preventDefault) ? event.preventDefault() : event.returnValue = false;
 
-								var link = 'rs.aspx?rn=' + report.UrlEncodedName + '&print=1';
+								//var link = 'rs.aspx?rn=' + report.UrlEncodedName + '&print=1';
+								//Helix Changed to:
+								var link = 'rs.aspx?rn=' + report.UrlEncodedName + '&output=PDF';
 								window.open(link, '_blank');
 							});
 						if (!imageMode) {
