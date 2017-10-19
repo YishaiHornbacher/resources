@@ -962,7 +962,7 @@ function GetExport(format) {
 	if (reportNameParam)
 		urlParams = urlParams + reportNameParam;
 
-	responseServer.OpenUrlWithModalDialogNewCustomRsUrl(urlParams, 'aspnetForm', 'reportFrame', nrvConfig.ResponseServerUrl);
+	responseServer.OpenUrlWithModalDialogNewCustomRsUrl(urlParams, 'aspnetForm', 'reportFrame');
 }
 
 //------------------------------------------------------------------------------------------------------------------------
@@ -1078,7 +1078,10 @@ function GotReportViewerConfig(returnObj, id) {
 	if (nrvConfig.UseBulkCsv) {
 		var csvExportBtn = document.getElementById('csvExportBtn');
 		if (csvExportBtn != null)
-			csvExportBtn.onclick = function () { ExtendReportExport(responseServer.OpenUrlWithModalDialogNewCustomRsUrl, 'rs.aspx?output=BULKCSV', 'aspnetForm', 'reportFrame', nrvConfig.ResponseServerUrl); };
+			csvExportBtn.onclick = function () {
+				ExtendReportExport(responseServer.OpenUrlWithModalDialogNewCustomRsUrl,
+					nrvConfig.ResponseServerUrl + nrvConfig.serverDelimiter + 'output=BULKCSV', 'aspnetForm', 'reportFrame');
+			};
 	}
 	if (!nrvConfig.ShowHtmlPrint || nrvConfig.LimitOutputsToCsv)
 		document.getElementById('htmlPrintBtn').style.display = 'none';
@@ -1098,7 +1101,8 @@ function GotReportViewerConfig(returnObj, id) {
 		document.getElementById('saveAsBtn').style.display = 'none';
 	ChangeTopRecords(nrvConfig.InitialResults, false);
 	if (urlSettings.reportInfo.exportType != null) {
-		responseServer.OpenUrlWithModalDialogNewCustomRsUrl(nrvConfig.ResponseServerUrl + nrvConfig.serverDelimiter + 'output=' + urlSettings.reportInfo.exportType, 'aspnetForm', 'reportFrame', nrvConfig.ResponseServerUrl);
+		responseServer.OpenUrlWithModalDialogNewCustomRsUrl(
+			nrvConfig.ResponseServerUrl + nrvConfig.serverDelimiter + 'output=' + urlSettings.reportInfo.exportType, 'aspnetForm', 'reportFrame');
 	}
 
 	if (!nrvConfig.ShowAllInResults) {
