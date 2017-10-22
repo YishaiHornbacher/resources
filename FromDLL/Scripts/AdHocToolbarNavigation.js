@@ -130,83 +130,7 @@ function TB_PropmtReportName(
 		if (showCategory) {
 			if (autoSelectedValue == '')
 				autoSelectedValue = category;
-<<<<<<< HEAD
-			var categories = reportCategories.split(",");
-			var categoriesHtml = "<select onchange='TB_OnCategoryChanged(this)' id='promt_input2' style='min-width:136px;'>";
-			var indent = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-			var currentCategory = new Array();
-			var selectedAnything = false;
-			for(var i=0;i<categories.length;i++)
-			{
-				var currentName = "";
-				var currentDispalName = "";
-				var newCurrentCategory = new Array();
-				var subcategories = categories[i].split(jsResources.categoryCharacter);
-				
-			    //Helix Added
-			    var helixCategory = categories[i];
-			    if (helixCategory.substr(-"[Helix]".length) === "[Helix]" || (helixCategory.charAt(0) === "z" && (helixCategory.substring(0, 2) === "zz" || helixCategory.substring(1, 1) === helixCategory.substring(1, 1).toUpperCase()))) {
-				    continue;
-				}
-
-
-				var cnt = currentCategory.length;
-				if (cnt > subcategories.length)
-				  cnt = subcategories.length;
-					
-				var subcategoriesIndex = 0;
-				
-				while ((subcategoriesIndex < cnt) && (currentCategory[subcategoriesIndex] == subcategories[subcategoriesIndex]))
-				{
-					if (currentName != "")
-						currentName += jsResources.categoryCharacter;
-					currentName += subcategories[subcategoriesIndex];
-					currentDispalName += indent;
-					newCurrentCategory.push(subcategories[subcategoriesIndex]);
-					subcategoriesIndex++;
-				}
-				
-				cnt = subcategories.length;
-				for (var j=subcategoriesIndex;j<cnt;j++)
-				{
-					if (currentName != "")
-						currentName += jsResources.categoryCharacter;
-				  currentName += subcategories[j];
-				  selected = "";
-				  if (!selectedAnything) {
-				    var selected = (additionalCategories == null && currentName == category) ? "selected" : "";
-				    if (autoSelectedValue == currentName) {
-				      selected = "selected";
-				      autoSelectedValue = "";
-				    }
-				    if (selected == "selected")
-				      selectedAnything = true;
-				  }
-					categoriesHtml += "<option value=\"" + currentName + "\" " + selected+ " >" + currentDispalName+subcategories[j] + "</option>";
-					currentDispalName += indent;
-					newCurrentCategory.push(subcategories[j]);
-				}
-				
-				if (i==0 && !dontCreateNewCategories)
-					categoriesHtml += "<option value='CreateNew'>" + jsResources.CreateNew + "</option>";
-				currentCategory = newCurrentCategory;
-			}
-			if (additionalCategories != null) {
-			  if (!selectedAnything) {
-			    var pos = additionalCategories.indexOf("'" + autoSelectedValue + "'");
-			    if (pos > 0) {
-			      var tagStr = "'" + autoSelectedValue + "'";
-			      var len = tagStr.length;
-			      var newAC = additionalCategories.substr(0, pos + len) + " selected " + additionalCategories.substr(pos + len);
-			      additionalCategories = newAC;
-			    }
-			  }
-			  categoriesHtml += additionalCategories;
-			}
-			categoriesHtml += "</select>";
-=======
 			var categoriesHtml = "<select id='promt_input2' style='min-width:136px;'></select>";
->>>>>>> 41f82082fefec93c8ccb85bc8d5d4d0f33ea4a06
 			genHtml += "<span>" + jsResources.Category + "</span><br>" + categoriesHtml;
 		}
 		else
@@ -227,7 +151,10 @@ function TB_PropmtReportName(
 					}];
 					var categories = reportCategories.split(",");
 					catsArray = catsArray.concat(categories
-						.filter(function (f) { return f !== ''; })
+						.filter(function (f) {
+							var bad = f.substr(-"[Helix]".length) === "[Helix]" || (f.charAt(0) === "z" && (f.substring(0, 2) === "zz" || f.substring(1, 1) === f.substring(1, 1).toUpperCase()));
+							return !bad && f !== '';
+						})
 						.map(function (c) {
 							return { name: c };
 						}));

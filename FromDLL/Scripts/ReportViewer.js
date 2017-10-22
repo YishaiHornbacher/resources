@@ -706,62 +706,6 @@ function GotCategoriesList(returnObj, id, setRn) {
 	if (setRn) {
 		newReportName.value = curRepName;
 	}
-<<<<<<< HEAD
-	var catsArray = new Array();
-	catsArray[catsArray.length] = '';
-	for (var acCnt = 0; acCnt < additionalCategories.length; acCnt++)
-		catsArray[catsArray.length] = additionalCategories[acCnt];
-	for (var index = 0; returnObj.AdditionalData && index < returnObj.AdditionalData.length; index++)
-		catsArray[catsArray.length] = returnObj.AdditionalData[index];
-	newCategoryName.options.length = 0;
-	var root = new Object();
-	root.node = null;
-	root.name = '';
-	root.path = '';
-	root.subs = new Array();
-	for (var index = 0; index < catsArray.length; index++) {
-
-	    //Helix Added
-	    var reportName = catsArray[index];
-            if (reportName.substr(-"[Helix]".length) === "[Helix]" || (reportName.charAt(0) === "z" && (reportName.substring(0,2) === "zz" || reportName.substring(1,1) === reportName.substring(1,1).toUpperCase()))) {
-               continue;
-            }
-
-
-		var subCats = catsArray[index].split(nrvConfig.CategoryCharacter);
-		var indent = '';
-		var currentParent = root;
-		for (var scCnt = 0; scCnt < subCats.length; scCnt++) {
-			if (scCnt > 0)
-				indent += String.fromCharCode(160) + String.fromCharCode(160);
-			var newParent = null;
-			for (var rsCnt = 0; rsCnt < currentParent.subs.length; rsCnt++) {
-				if (currentParent.subs[rsCnt].name == subCats[scCnt]) {
-					newParent = currentParent.subs[rsCnt];
-					break;
-				}
-			}
-			if (newParent == null) {
-				newParent = new Object();
-				newParent.name = subCats[scCnt];
-				newParent.path = currentParent.path + (currentParent.path.length > 0 ? nrvConfig.CategoryCharacter : '') + newParent.name;
-				newParent.subs = new Array();
-				var npOpt = new Option();
-				npOpt.value = newParent.path;
-				npOpt.text = indent + newParent.name;
-				while (npOpt.text.indexOf('+') >= 0)
-					npOpt.text = npOpt.text.replace('+', ' ');
-				if (npOpt.value == curCatName)
-					npOpt.selected = 'selected';
-				newParent.node = npOpt;
-				currentParent.subs[currentParent.subs.length] = newParent;
-			}
-			currentParent = newParent;
-		}
-	}
-	AddOptsRecursively(newCategoryName, root);
-	prevCatValue = newCategoryName.value;
-=======
 
 	// set up category control
 	var isInitialized = false; // isInitialized means that we've just created control.
@@ -775,7 +719,10 @@ function GotCategoriesList(returnObj, id, setRn) {
 
 	var catsArray = [];
 	catsArray.push({ name: '' });
-	catsArray = catsArray.concat(returnObj.AdditionalData.map(function (c) {
+	catsArray = catsArray.concat(returnObj.AdditionalData.filter(function (f) {
+		var bad = f.substr(-"[Helix]".length) === "[Helix]" || (f.charAt(0) === "z" && (f.substring(0, 2) === "zz" || f.substring(1, 1) === f.substring(1, 1).toUpperCase()));
+		return !bad;
+	}).map(function (c) {
 		return { name: c };
 	}));
 	catsArray = catsArray.concat(additionalCategories.map(function (c) {
@@ -791,7 +738,6 @@ function GotCategoriesList(returnObj, id, setRn) {
 			else
 				reportViewerContext.previousCategory = val;
 		});
->>>>>>> 41f82082fefec93c8ccb85bc8d5d4d0f33ea4a06
 
 	ReportingServices.showModal(document.getElementById("saveAsBlock"), {
 		buttons: [
@@ -1211,18 +1157,6 @@ function GotRenderedReportSet(returnObj, id) {
 		if (typeof (GetFiltersData) === 'function')
 			GetFiltersData();
 	}
-
-    //Helix - Code added to expand AG reports.
-    //Create an object with no properties so that there is no chance of conflicts.
-    //Using an object instead of a Set because of potential browser compatibility issues.
-	var expandedReports = Object.create(null);
-    expandedReports["Helix PL"] = true;
-    //For now, all reports are expanded. In the future that will not be true. Enumerating the reports by name is one way of dealing with it.
-    //Another would be to have some naming convention.
-
-	//if (location.search.substring(4, location.search.length) in expandedReports)
-	    jq$(".ag-icon-show-all").click();
-	
 }
 
 function FirstLoadInit() {
