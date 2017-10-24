@@ -1157,6 +1157,9 @@ function GotRenderedReportSet(returnObj, id) {
 		if (typeof (GetFiltersData) === 'function')
 			GetFiltersData();
 	}
+    
+    //Helix Added
+    jq$(".ag-icon-show-all").click();
 }
 
 function FirstLoadInit() {
