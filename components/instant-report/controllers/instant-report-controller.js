@@ -1,4 +1,4 @@
-﻿izendaRequire.define([
+izendaRequire.define([
 	'angular',
 	'resizeSensor',
 	'../../common/core/services/compatibility-service',
@@ -629,17 +629,6 @@
 					vm.reportInfo = null;
 					return;
 				}
-				// default action - new report
-				if (reportInfo.isDefault) {
-					$izendaUrl.setLocation({
-						fullName: null,
-						name: null,
-						category: null,
-						isNew: true,
-						isDefault: false
-					});
-					return;
-				}
 				if (angular.isString(reportInfo.fullName) && reportInfo.fullName.trim() !== '') {
 					// if location contains report name: load it
 					$izendaInstantReportStorage.loadReport(reportInfo.fullName).then(function () {
@@ -781,7 +770,7 @@
 			// left panel resize sensor
 			var $panel = jq$('.iz-inst-left-panel');
 			if ($panel.length)
-				resizeSensor.create($panel.get(0), function () {
+				resizeSensor($panel.get(0), function () {
 					vm.alignNavDropdowns();
 				});
 		};

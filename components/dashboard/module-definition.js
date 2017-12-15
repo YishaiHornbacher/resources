@@ -1,4 +1,4 @@
-﻿/**
+/**
  * requirejs module, which creates angular modules.
  * returns 'loadSettings' function, which could load settings for this module.
  */
@@ -41,6 +41,13 @@ izendaRequire.define(['angular', 'angular-cookies', '../common/module-definition
 				}
 			})
 			.config(['$logProvider', function ($logProvider) { $logProvider.debugEnabled(false); }])
+			.config(['$provide', function ($provide) {
+				$provide.decorator('$browser', ['$delegate', function ($delegate) {
+					$delegate.onUrlChange = function () { };
+					$delegate.url = function () { return ''; };
+					return $delegate;
+				}]);
+			}])
 			.constant('$izendaDashboardSettings', configObject);
 
 		return module;
