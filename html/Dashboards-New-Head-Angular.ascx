@@ -10,6 +10,7 @@
 <!-- old styles -->
 <link rel="stylesheet" type="text/css" href="./<%=AdHocSettings.ResourcesProviderUniqueUrlWithDelimiter%>extres=css.shrinkable-grid.css" />
 <link rel="stylesheet" type="text/css" href="./<%=AdHocSettings.ResourcesProviderUniqueUrlWithDelimiter%>css=ModalDialogStyle" />
+<link rel="stylesheet" type="text/css" href="./<%=AdHocSettings.ResourcesProviderUniqueUrlWithDelimiter%>extres=css.Filters.css" />
 <!-- new styles -->
 <link rel="stylesheet" type="text/css" href="./<%=AdHocSettings.ResourcesProviderUniqueUrlWithDelimiter%>extres=components.common.css.common.css" />
 <link rel="stylesheet" type="text/css" href="./<%=AdHocSettings.ResourcesProviderUniqueUrlWithDelimiter%>extres=components.filter.css.filters.css" />
@@ -220,7 +221,9 @@
 		if (Page.Request.Params["clear"] != null)
 		{
 			AdHocContext.CurrentReportSet = ReportSet.InitializeNew();
-			Response.Redirect(Utility.AppendIzPidParameter(Page.Request.Url.LocalPath) + "?isNew=1");
+			Response.Redirect(Utility.AppendIzPidParameter(Page.Request.Url.LocalPath) + "?isNew=1", false);
+			HttpContext.Current.ApplicationInstance.CompleteRequest();
+			Page.Visible = false;
 		}
 	}
 </script>

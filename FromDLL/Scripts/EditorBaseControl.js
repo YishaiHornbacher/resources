@@ -52,6 +52,30 @@ var resourcesProvider;
 var descriptions = new Array();
 var tablesSave = {};
 
+(function (ns) {
+	ns.isDefined = function (value) {
+		return typeof value !== 'undefined';
+	};
+
+	ns.isUndefined = function (value) {
+		return typeof value === 'undefined';
+	};
+
+	ns.getValue = function (value, defaultValue) {
+		return ns.isDefined(value) ? value : defaultValue;
+	};
+
+	ns.pages = ns.pages || {};
+	ns.pages.designer = ns.pages.designer || {};
+	ns.pages.designer.context = ns.pages.designer.context || {};
+
+	var context = ns.pages.designer.context;
+	context.qac_works = ns.getValue(context.qac_works, false);
+	context.qac_requests = ns.getValue(context.qac_requests, 0);
+	context.qac_timers = ns.getValue(context.qac_timers, 0);
+
+})(window.izenda || (window.izenda = {}));
+
 function urldecode(s) {
 	return decodeURIComponent(s).replace(/\+/g, ' ');
 }
@@ -178,9 +202,11 @@ function EBC_OnServerResponse(url, xmlHttpRequest, arg, additionalData) {
 		if (arg.callbackFunction)
 			arg.callbackFunction(data, wait);
 	}
-	if (typeof sc_qac_works != 'undefined' && sc_qac_works != null && sc_qac_works == true) {
-		sc_qac_requests--;
-		SC_QuickAdd_Close_Callback();
+
+	var pageContext = izenda.pages.designer.context;
+	if (pageContext.qac_works) {
+		pageContext.qac_requests--;
+		izenda.pages.designer.QuickAdd_Close_Callback();
 	}
 }
 
@@ -237,11 +263,13 @@ function EBC_CallServer(path, params, async, callbackFunction, additionalData) {
 
 	var paramsProcessed = params.replace("=&", "&");
 	var commandParams =
-		'p=' + encodeURIComponent(path) + "&" + paramsProcessed +
+		'p=' + encodeURIComponent(path) + 
+		(!paramsProcessed ? '' : "&" + paramsProcessed) +
 		(quantityOfCallsInvalidate == 0 ? "" : "&" + "r=" + quantityOfCallsInvalidate);
 
-	if (typeof sc_qac_works != 'undefined' && sc_qac_works != null && sc_qac_works == true)
-		sc_qac_requests++;
+	var pageContext = izenda.pages.designer.context;
+	if (pageContext.qac_works)
+		pageContext.qac_requests++;
 
 	responseServer.ExecuteCommand(
 		"GetOptionsByPath",
@@ -282,9 +310,26 @@ function UriEncodeParamValue(paramsStr, nameToEncode) {
 	return params;
 }
 
-function EBC_LoadData(path, params, sel, async, callbackFunction, additionalData) {
-	if (params == null)
-		params = "";
+function EBC_TrimParams(params) {
+	if (!params)
+		return '';
+	var len = params.length;
+	var begin = 0;
+	while (begin < len && (params[begin] === ' ' || params[begin] === '&'))
+		begin++;
+	var end = len - 1;
+	while (end >= 0 && (params[end] === ' ' || params[end] === '&'))
+		end--;
+	var newLen = end - begin + 1;
+	if (newLen <= 0)
+		return '';
+	else if (newLen < len)
+		return params.substr(begin, newLen);
+	return params;
+}
+
+function EBC_LoadData(path, params, sel, async, callbackFunction, additionalData, selOptionValidator) {
+	params = EBC_TrimParams(params);
 	params = UriEncodeParamValue(params, 'tables');
 	params = UriEncodeParamValue(params, 'columnName');
 	var tblCnt = -1;
@@ -307,7 +352,7 @@ function EBC_LoadData(path, params, sel, async, callbackFunction, additionalData
 		if (additionalData != null) {
 			contentData = contentData.concat(additionalData);
 		}
-		sel = EBC_SetSelectContent(sel, contentData);
+		sel = EBC_SetSelectContent(sel, contentData, selOptionValidator);
 		if (sel != null)
 			sel.Loading = false;
 		if (callbackFunction)
@@ -330,6 +375,7 @@ function EBC_LoadData(path, params, sel, async, callbackFunction, additionalData
 		obj.sel.urlKey = '#' + path + '#' + params + '#';
 	obj.urlKey = '#' + path + '#' + params + '#';
 	obj.callback = callbackFunction;
+	obj.optValidator = selOptionValidator;
 	objs.push(obj);
 
 	if (newPath) {
@@ -366,7 +412,7 @@ function EBC_SetData(path, data, additionalData) {
 		var sel = objs[i].sel;
 		if (objs[i].urlKey != sel.urlKey)
 			continue;
-		sel = EBC_SetSelectContent(sel, contentData);
+		sel = EBC_SetSelectContent(sel, contentData, objs[i].optValidator);
 		if (sel != null)
 			sel.Loading = false;
 	}
@@ -430,7 +476,7 @@ function EBC_GetSelectValue(sel) {
 	return result;
 }
 
-function EBC_SetSelectContent(sel, data) {
+function EBC_SetSelectContent(sel, data, selOptionValidator) {
 	if (sel == null)
 		return;
 
@@ -461,7 +507,8 @@ function EBC_SetSelectContent(sel, data) {
 					}
 				}
 			}
-			jqOptionsContainer.append(jqOption);
+			if (!selOptionValidator || selOptionValidator(jqOption))
+				jqOptionsContainer.append(jqOption);
 		}
 	}
 
@@ -863,12 +910,14 @@ var ebc_fieldsCount = {};
 var ebc_totalFieldsCount = 0;
 var lastCallParams_EBC_CheckFieldsCount = new Array();
 function EBC_CheckFieldsCount(id, count) {
-	if (typeof sc_qac_works != 'undefined' && sc_qac_works != null && sc_qac_works == true) {
+	var pageContext = izenda.pages.designer.context;
+	if (pageContext.qac_works) {
 		lastCallParams_EBC_CheckFieldsCount = new Array();
 		lastCallParams_EBC_CheckFieldsCount[0] = id;
 		lastCallParams_EBC_CheckFieldsCount[1] = count;
 		return;
 	}
+
 	if (ebc_fieldsCount[id] != null)
 		ebc_totalFieldsCount -= ebc_fieldsCount[id];
 	ebc_fieldsCount[id] = count;
@@ -918,4 +967,52 @@ function EBC_ValidateNumberInput(e) {
 	if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
 		e.preventDefault();
 	}
+}
+
+function EBC_GetTypesValidator(csvStr) {
+	var result = Object.create(null);
+	result.Contains = function (key) { return this[key] === true; };
+	result.TypeAllowed = function(key) { return this.Contains('all') || this.Contains('not') !== this.Contains(key)};
+	if (typeof csvStr !== 'string') {
+		result['all'] = true;
+		return result;
+	}
+	csvStr = csvStr.trim().toLowerCase();
+	if (csvStr.length >= 3 && csvStr.substr(0, 3) === 'not')
+	{
+		result['not'] = true;
+		csvStr = csvStr.substr(3);
+	}
+	if (csvStr.length <= 0) {
+		result['all'] = true;
+		return result;
+	}
+	csvStr.split(',').forEach(function (val) {
+		var trimmed = val.trim();
+		if (trimmed)
+			result[trimmed] = true;
+		if (trimmed === 'datetime') {
+			result['date'] = true;
+			result['time'] = true;
+		}
+	});
+	return result;
+}
+
+function EBC_JoinParams() {
+	var len = arguments.length;
+	var oddArgsNumber = len & 1 === 1;
+	if (len <= 0 || oddArgsNumber)
+		return '';
+	var result = '';
+	var pNum = 0;
+	while (pNum < len)
+	{
+		var pName = String(arguments[pNum++]).trim();
+		var pValue = String(arguments[pNum++]).trim();
+		if (!pName || !pValue)
+			continue;
+		result += '&' + pName + '=' + pValue;
+	}
+	return result;
 }

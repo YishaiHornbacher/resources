@@ -6,12 +6,12 @@
 		baseUrl: '###RS###extres=components',
 		waitSeconds: 0,
 		paths: {
-			'babel-polyfill': 'vendor/babel/polyfill.min',
 			'moment': 'vendor/moment/moment-with-locales.min',
 			'izendaAngular': 'vendor/angular/angular.min',
 			'izendaAngularCookies': 'vendor/angular/angular-cookies.min',
 			'css-parser': 'vendor/jscssp/cssParser',
-			'bootstrap-datetimepicker': 'vendor/bootstrap/js/bootstrap-datetimepicker.min'
+			'bootstrap-datetimepicker': 'vendor/bootstrap/js/bootstrap-datetimepicker.min',
+			'corejs': 'vendor/corejs/shim.min'
 		},
 		map: {
 			'*': {
@@ -31,9 +31,7 @@
 		return jq$;
 	});
 
-	var firstRequireArray = ['jquery', 'common/loader-utils'];
-	if (!window._babelPolyfill)
-		firstRequireArray.push('babel-polyfill');
+	var firstRequireArray = ['jquery', 'common/loader-utils', 'corejs'];
 
 	// start loading
 	require(firstRequireArray, function (jq$, loaderUtils) {

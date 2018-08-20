@@ -43,6 +43,30 @@ var CC_FirstTimeOperatorUpdated;
 var showingC = false;
 var CC_Initialized = false;
 
+(function (ns) {
+	ns.isDefined = function (value) {
+		return typeof value !== 'undefined';
+	};
+
+	ns.isUndefined = function (value) {
+		return typeof value === 'undefined';
+	};
+
+	ns.getValue = function (value, defaultValue) {
+		return ns.isDefined(value) ? value : defaultValue;
+	};
+
+	ns.pages = ns.pages || {};
+	ns.pages.designer = ns.pages.designer || {};
+	ns.pages.designer.context = ns.pages.designer.context || {};
+
+	var context = ns.pages.designer.context;
+	context.qac_works = ns.getValue(context.qac_works, false);
+	context.qac_requests = ns.getValue(context.qac_requests, 0);
+	context.qac_timers = ns.getValue(context.qac_timers, 0);
+
+})(window.izenda || (window.izenda = {}));
+
 function CC_LoadColumns(id, path, options, selectName, row) {
 	if (selectName == null)
 		selectName = "Column";
@@ -75,7 +99,7 @@ function CC_LoadColumns(id, path, options, selectName, row) {
 	} else
 		rows = jq$(table.tBodies[0]).find("tr");
 
-	var cc_newData = path + options + "&" + "filterList=true";
+	var cc_newData = path + options;
 	if (additionalData != null)
 		cc_newData = cc_newData + JSON.stringify(additionalData);
 
@@ -89,7 +113,14 @@ function CC_LoadColumns(id, path, options, selectName, row) {
 		if (value == "" || value == null || value.indexOf(calcFieldPrefix) == 0)
 			value = EBC_GetSelectValue(columnSel);
 		columnSel.value = value;
-		EBC_LoadData(path, options + "&" + "filterList=true", columnSel, true, null, additionalData);
+		EBC_LoadData(path, options, columnSel, true, null, additionalData, function (newOpt) {
+			if (newOpt.attr('prohibitedInFilters') === 'true')
+				return false;
+			var filterAlias = newOpt.attr('filterListAlias');
+			if (filterAlias && newOpt.length > 0)
+				newOpt[0].text = filterAlias;
+			return true;
+		});
 	}
 }
 
@@ -517,7 +548,9 @@ var lastCallParams_CC_OnTableListChangedHandler = new Array();
 function CC_OnTableListChangedHandler(id, tables, loadFields, selectName, row) {
 	if (tables == null)
 		return;
-	if (typeof sc_qac_works != 'undefined' && sc_qac_works != null && sc_qac_works == true) {
+
+	var pageContext = izenda.pages.designer.context;
+	if (pageContext.qac_works) {
 		lastCallParams_CC_OnTableListChangedHandler = new Array();
 		lastCallParams_CC_OnTableListChangedHandler[0] = id;
 		lastCallParams_CC_OnTableListChangedHandler[1] = tables;
@@ -678,7 +711,7 @@ function CC_OnColumnChangedHandler(e) {
 			colFullName = "";
 		var id = EBC_GetParentTable(row).id;
 		var tables = "tables=" + tablesSave[id];
-		EBC_LoadData("OperatorList", "typeGroup=" + dataType + "&" + tables + "&colFullName=" + colFullName, operatorSel);
+		EBC_LoadData("OperatorList", EBC_JoinParams("typeGroup", dataType) + "&" + tables + "&colFullName=" + colFullName, operatorSel);
 		if (CC_allowNewFilters != null && (CC_allowNewFilters == null || CC_allowNewFilters)) {
 			var columnSel = EBC_GetSelectByName(row, 'Column');
 			if (columnSel.value != '' && columnSel.value != '...') {
@@ -689,7 +722,7 @@ function CC_OnColumnChangedHandler(e) {
 
 		var formatSel = EBC_GetSelectByName(row, 'DisplayFormat');
 		if (formatSel != null)
-			EBC_LoadData('FormatList', 'typeGroup=' + ((expressionType && expressionType != '...') ? expressionType : dataTypeGroup) + '&onlySimple=true&forceSimple=true&colFullName=' + colFullName, formatSel);
+			EBC_LoadData('FormatList', EBC_JoinParams('typeGroup', ((expressionType && expressionType != '...') ? expressionType : dataTypeGroup)) + '&onlySimple=true&forceSimple=true&colFullName=' + colFullName, formatSel);
 	}
 }
 
@@ -912,6 +945,11 @@ function CC_InitAutoComplete(row) {
 						var cmd = CC_GetFilterCMD(currentRow);
 						cmd += "&possibleValue=" + possibleText.replace('&', '%26') + "&resultType=json";
 						EBC_LoadData("ExistentValuesList", "columnName=" + fullColumnName + cmd, null, true, function (responseResult) {
+							if (!responseResult === null || responseResult.length === null || responseResult.length <= 0) {
+								responeFunction("");
+								return;
+							}
+
 							var result = new Array();
 							jq$.each(responseResult[0].options, function (i, item) {
 								if (item.value == null || item.value == "" || item.value == '...')
