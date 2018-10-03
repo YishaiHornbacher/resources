@@ -34,8 +34,6 @@
 |___________________________________________________________________|
 */
 
-var isNetscape = window.navigator.appName == 'Netscape' || window.navigator.appName == 'Opera';
-
 var ebc_data = {};
 var ebc_wait = {};
 var ebc_controls = new Array();
@@ -50,29 +48,19 @@ var currentRequests = 0;
 var responseServer;
 var resourcesProvider;
 var descriptions = new Array();
-var tablesSave = {};
 
 (function (ns) {
-	ns.isDefined = function (value) {
-		return typeof value !== 'undefined';
-	};
-
-	ns.isUndefined = function (value) {
-		return typeof value === 'undefined';
-	};
-
-	ns.getValue = function (value, defaultValue) {
-		return ns.isDefined(value) ? value : defaultValue;
-	};
-
 	ns.pages = ns.pages || {};
 	ns.pages.designer = ns.pages.designer || {};
+
 	ns.pages.designer.context = ns.pages.designer.context || {};
 
 	var context = ns.pages.designer.context;
 	context.qac_works = ns.getValue(context.qac_works, false);
 	context.qac_requests = ns.getValue(context.qac_requests, 0);
 	context.qac_timers = ns.getValue(context.qac_timers, 0);
+
+	context.descriptions = ns.getValue(context.descriptions, []);
 
 })(window.izenda || (window.izenda = {}));
 
@@ -134,14 +122,8 @@ function EBC_SubmitHandler(evt) {
 	if (ebc_cancelSubmiting) {
 		evt = evt == null ? event : evt;
 		ebc_cancelSubmiting = false;
-		if (!isNetscape) {
-			event.cancelBubble = true;
-			event.returnValue = false;
-		}
-		else {
-			evt.stopPropagation();
-			evt.preventDefault();
-		}
+		evt.stopPropagation();
+		evt.preventDefault();
 		return false;
 	}
 	ebc_controlsRenamed = true;
@@ -164,16 +146,11 @@ function EBC_FormSubmit() {
 }
 
 function EBC_internalSetSubmitHandler() {
+	window.addEventListener('submit', EBC_SubmitHandler, false);
+
 	var forms = document.forms;
-	if (isNetscape)
-		window.addEventListener('submit', EBC_SubmitHandler, false);
-	else
-		window.attachEvent('onsubmit', EBC_SubmitHandler);
 	for (var i = 0; i < forms.length; i++) {
-		if (isNetscape)
-			forms[i].addEventListener('submit', EBC_SubmitHandler, false);
-		else
-			forms[i].attachEvent('onsubmit', EBC_SubmitHandler);
+		forms[i].addEventListener('submit', EBC_SubmitHandler, false);
 		forms[i].submitBackup = forms[i].submit;
 		forms[i].submit = EBC_FormSubmit;
 	}
@@ -436,8 +413,10 @@ function EBC_LoadTableInfo() {
 function EBC_LoadConstraints() {
 	if (ebc_constraintsInfo != null)
 		return;
-
-	var requestString = 'wscmd=getconstraintslist&wsarg0=advanced';
+	var requestString = 'wscmd=getconstraintslist';
+	var acInput = jq$('input[id$="AdvancedConstraints"]');
+	if (acInput.length > 0 && acInput[0] && acInput[0].value)
+		requestString += '&wsarg0=' + encodeURIComponent(acInput[0].value);
 	AjaxRequest('./rs.aspx', requestString, function (returnObj, id) {
 		if (id != 'getconstraintslist' || typeof returnObj === 'undefined' || returnObj == null)
 			return;
@@ -485,13 +464,14 @@ function EBC_SetSelectContent(sel, data, selOptionValidator) {
 	var fieldIndex = jqSelect.find(':selected').attr('fieldIndex');
 
 	jqSelect.empty();
+	var optionsContainer = null;
 	for (var i = 0; i < data.length; ++i) {
 		var group = data[i];
 		var jqOptionsContainer = jqSelect;
-		if (group.name != "") {
-			var jqOptionGroup = jq$('<optgroup></optgroup>').attr('label', group.name);
-			jqOptionsContainer.append(jqOptionGroup);
-			qOptionsContainer = jqOptionGroup;
+		optionsContainer = jqSelect;
+		if (group.name !== '') {
+			optionsContainer = jq$('<optgroup></optgroup>').attr('label', group.name);
+			jqOptionsContainer.append(optionsContainer);
 		}
 		for (var j = 0; j < group.options.length; ++j) {
 			var option = group.options[j];
@@ -508,7 +488,7 @@ function EBC_SetSelectContent(sel, data, selOptionValidator) {
 				}
 			}
 			if (!selOptionValidator || selOptionValidator(jqOption))
-				jqOptionsContainer.append(jqOption);
+				optionsContainer.append(jqOption);
 		}
 	}
 
@@ -590,43 +570,19 @@ function EBC_CleanupRow(row) {
 }
 
 function EBC_FireOnChange(sel) {
-	// this is not browser fired event, so let propertyName field indicate it.
-	//sel.onchangeRaisedManually = true;
-	//try
-	//{
-	if (isNetscape) {
-		var e = document.createEvent("HTMLEvents");
-		e.initEvent("change", true, false);
-		try {
-			sel.dispatchEvent(e);
-		}
-		catch (ex) { }
-		e = document.createEvent("HTMLEvents");
-		e.initEvent("resize", true, false);
-		document.documentElement.dispatchEvent(e);
+	var e = document.createEvent('HTMLEvents');
+	e.initEvent('change', true, false);
+	try {
+		sel.dispatchEvent(e);
 	}
-	else {
-		var eventObj = document.createEventObject();
-		eventObj.propertyName = '1';
-		if (sel.disabled && sel.onchange != null)
-			sel.onchange(eventObj);
-		if (sel.fireEvent != null) {
-			try {
-				sel.fireEvent("onchange", eventObj);
-			}
-			catch (ex) { }
-		}
-		document.documentElement.fireEvent('onresize');
-	}
-	//} 
-	//finally { sel.onchangeRaisedManually = false;}
+	catch (ex) { }
+	e = document.createEvent('HTMLEvents');
+	e.initEvent('resize', true, false);
+	document.documentElement.dispatchEvent(e);
 }
 
-function EBC_IsUserEvent() {
-	if (isNetscape)
-		return (ebc_mozillaEvent == null || ebc_mozillaEvent.propertyName != '1');
-	else
-		return (event == null || event.propertyName != '1');
+function EBC_IsUserEvent(evt) {
+	return !evt || evt.propertyName !== '1';
 }
 
 // Sets selected index of SELECT control by option's value.
@@ -646,9 +602,9 @@ function EBC_SetSelectedIndexByValue(sel, value) {
 		sel.setAttribute("oldValue", value);
 		var onceSeted = false;
 		var multiple = false;
-		if (isNetscape)
+		if (typeof(sel.multiple) !== 'undefined')
 			multiple = sel.multiple;
-		else if (sel.getAttribute("multiple") != null || sel.getAttribute("multiple") != undefined)
+		else if (!sel.getAttribute('multiple'))
 			multiple = true;
 
 		if ((value != null) && multiple) {
@@ -686,7 +642,7 @@ function EBC_GetElementByName(row, elementName, tagName) {
 	var oresult = row[code];
 	if (oresult && oresult.parentNode)
 		return oresult;
-	var result;
+	var result = null;
 	var elems = row.getElementsByTagName(tagName);
 	var cnt = elems.length;
 	for (var i = 0; i < cnt; i++) {
@@ -701,7 +657,7 @@ function EBC_GetElementByName(row, elementName, tagName) {
 			break;
 		}
 	}
-	if (isNetscape)
+	if (result)
 		row[code] = result;
 	return result;
 }
@@ -790,22 +746,11 @@ function EBC_Internal_GetTableName(tableName) {
 }
 
 function EBC_HideIfOpenerPresents(id) {
-	var hide;
-	if (isNetscape)
-		hide = (history.length == 1);
-	else
-		hide = window.opener != null;
+	var hide = window.history ? window.history.length === 1 : window.opener != null;
 	if (hide) {
 		var control = document.getElementById(id);
 		control.style["display"] = "none";
 	}
-}
-
-function EBC_GetSrcElement(e) {
-	if (isNetscape)
-		return e.target;
-	else
-		return e.srcElement;
 }
 
 EBC_internalSetSubmitHandler();
@@ -931,7 +876,9 @@ function EBC_CheckFieldsCount(id, count) {
 
 
 function EBC_PopulateDescriptions(fields) {
-	descriptions = new Array();
+	var pageContext = izenda.pages.designer.context;
+
+	pageContext.descriptions = [];
 	var calcField;
 	for (var i = 0; i < fields.length; i++) {
 		var field = fields[i];
@@ -944,7 +891,7 @@ function EBC_PopulateDescriptions(fields) {
 			calcField.initialDataType = field.initialDataType;
 			calcField.dataTypeGroup = field.dataTypeGroup;
 			calcField.expressionType = field.expressionType;
-			descriptions.push(calcField);
+			pageContext.descriptions.push(calcField);
 		}
 		else if (field.operationElem == '~' && (i + 1 < fields.length) && (fields[i + 1].operationElem != '~')) {
 			calcField.description = field.description;
@@ -953,7 +900,7 @@ function EBC_PopulateDescriptions(fields) {
 			calcField.initialDataType = field.initialDataType;
 			calcField.dataTypeGroup = field.dataTypeGroup;
 			calcField.expressionType = field.expressionType;
-			descriptions.push(calcField);
+			pageContext.descriptions.push(calcField);
 		}
 	}
 }
